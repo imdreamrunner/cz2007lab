@@ -52,3 +52,65 @@ INSERT INTO Member VALUES
 INSERT INTO Agent VALUES
     ('agent1'),
     ('agent2');
+
+
+INSERT INTO Vehicle (branch_code, type, bought_date, original_price, mileage) VALUES
+    ('sgp1', 'Economy', '2002-12-01', 5000, 256),
+    ('sgp1', 'Economy', '2012-12-01', 8000, 256),;
+
+
+INSERT INTO VehicleForSale VALUES
+    (1, 'agent1', '12345678', '2014-04-01', '2014-04-02', 2000, 200);
+
+
+INSERT INTO CreditCard VALUES
+    ('1234123412341234', '12345678', '2018-10-01');
+
+
+INSERT INTO ReservationRecord VALUES
+    (
+        '6423786782385',
+        'sgp1',
+        'Economy',
+        '12345678',
+        '2014-04-01 08:00',
+        '2014-04-02 08:00',
+        1,
+        20
+    );
+
+
+INSERT INTO RentRecord
+    (
+        confirmation_number,
+        phone,
+        card_number,
+        vehicle_id,
+        rate_id,
+        pick_up_time,
+        expected_return_time,
+        actual_return_time,
+        odometer,
+        is_tank_full,
+        point_used,
+        point_earned,
+        is_insurance_covered,
+        charge
+    )
+    VALUES
+    (
+        '6423786782385',
+        '12345678',
+        '1234123412341234',
+        1,
+        1,
+        '2014-04-01 08:00',
+        '2014-04-02 08:00',
+        '2014-04-02 08:00',
+        100,
+        1,
+        0,
+        100,
+        1,
+        20
+    );
