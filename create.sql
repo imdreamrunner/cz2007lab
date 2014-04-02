@@ -58,7 +58,7 @@ CREATE TABLE Customer (
 CREATE TABLE Member (
     phone VARCHAR(20) PRIMARY KEY,
     points INT DEFAULT 0 CHECK (points >= 0),
-    fees INT NOT NULL,
+    fees DECIMAL(32,2) NOT NULL,
     valid_through SMALLDATETIME NOT NULL,
     FOREIGN KEY (phone) REFERENCES Customer(phone)
             ON UPDATE CASCADE

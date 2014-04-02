@@ -30,4 +30,25 @@ INSERT INTO VehicleType (type, is_trunk) VALUES
 
 INSERT INTO RentalRate (w_rate, d_rate, h_rate, w_ins, d_ins, h_ins) VALUES
     (70, 10, 1, 70, 10, 1),
-    (140, 20, 2, 140, 20, 2);
+    (140, 20, 2, 140, 20, 2),
+    (210, 30, 4, 140, 20, 2);
+
+
+INSERT INTO Maintains VALUES
+    ('sgp1', 'Economy', 1),
+    ('sgp1', 'Compact', 2),
+    ('sgp1', '15-foot', 3);
+
+
+INSERT INTO Customer VALUES
+    ('12345678', 'Address1', 'L1234567', 'I Am Member'),
+    ('23456789', 'Address2', 'L2345678', 'I Am NOT Member');
+
+
+INSERT INTO Member VALUES
+    ('12345678', 500, 20, '2018-04-02');
+
+
+INSERT INTO Agent VALUES
+    ('agent1'),
+    ('agent2');
