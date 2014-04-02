@@ -88,7 +88,6 @@ CREATE TABLE VehicleForSale (
     added_date DATE DEFAULT GETDATE(),
     sold_date  DATE,
     sold_price DECIMAL(32,2) CHECK(sold_price > 0),
-            -- Sold price could be larger than original price due to inflation.
     point_used INT,
     FOREIGN KEY (vehicle_id) REFERENCES Vehicle(vehicle_id)
             ON UPDATE CASCADE,
@@ -96,10 +95,6 @@ CREATE TABLE VehicleForSale (
             ON UPDATE CASCADE,
     FOREIGN KEY (phone) REFERENCES Customer(phone)
             ON UPDATE CASCADE,
-    CHECK(added_date > (
-            SELECT bought_date FROM Vehicle
-            WHERE Vehicle.vehicle_id = VehicleForSale.vehicle_id
-        )),
     CHECK(sold_date > added_date)
 );
 
