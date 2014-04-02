@@ -59,7 +59,7 @@ CREATE TABLE Member (
     phone VARCHAR(20) PRIMARY KEY,
     points INT DEFAULT 0 CHECK (points >= 0),
     fees DECIMAL(32,2) NOT NULL,
-    valid_through SMALLDATETIME NOT NULL,
+    valid_through DATE NOT NULL,
     FOREIGN KEY (phone) REFERENCES Customer(phone)
             ON UPDATE CASCADE
             ON DELETE CASCADE
@@ -116,6 +116,7 @@ CREATE TABLE ReservationRecord (
     phone VARCHAR(20) NOT NULL,
     expected_pick_up_time SMALLDATETIME NOT NULL,    
     expected_return_time SMALLDATETIME NOT NULL,
+    is_insurance_covered BIT,
     estimated_charge DECIMAL(32, 2),
     canceled BIT DEFAULT 0,
     FOREIGN KEY (branch_code) REFERENCES Branch(branch_code)

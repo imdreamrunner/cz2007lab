@@ -56,7 +56,7 @@ INSERT INTO Agent VALUES
 
 INSERT INTO Vehicle (branch_code, type, bought_date, original_price, mileage) VALUES
     ('sgp1', 'Economy', '2002-12-01', 5000, 256),
-    ('sgp1', 'Economy', '2012-12-01', 8000, 256),;
+    ('sgp1', 'Economy', '2012-12-01', 8000, 256);
 
 
 INSERT INTO VehicleForSale VALUES
@@ -67,7 +67,18 @@ INSERT INTO CreditCard VALUES
     ('1234123412341234', '12345678', '2018-10-01');
 
 
-INSERT INTO ReservationRecord VALUES
+INSERT INTO ReservationRecord 
+    (
+        confirmation_number,
+        branch_code,
+        type,
+        phone,
+        expected_pick_up_time,
+        expected_return_time,
+        is_insurance_covered,
+        estimated_charge
+    )
+    VALUES
     (
         '6423786782385',
         'sgp1',
