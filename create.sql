@@ -23,11 +23,11 @@ CREATE TABLE RentalRate (
     w_rate DECIMAL(10,2) NOT NULL CHECK(w_rate >= 0),
     d_rate DECIMAL(10,2) NOT NULL CHECK(d_rate >= 0),
     h_rate DECIMAL(10,2) NOT NULL CHECK(h_rate >= 0),
-    CHECK (w_rate <= d_rate*7 AND d_rate <= h_rate*7),
+    CHECK (w_rate <= d_rate*24 AND d_rate <= h_rate*24),
     w_ins DECIMAL(10,2) NOT NULL CHECK(w_ins >= 0),
     d_ins DECIMAL(10,2) NOT NULL CHECK(d_ins >= 0),
     h_ins DECIMAL(10,2) NOT NULL CHECK(h_ins >= 0),
-    CHECK (w_ins < d_ins*7 AND d_ins <= h_ins*7)
+    CHECK (w_ins <= d_ins*24 AND d_ins <= h_ins*24)
 );
 
 
@@ -56,7 +56,7 @@ CREATE TABLE Customer (
 
 CREATE TABLE Member (
     phone VARCHAR(20) PRIMARY KEY,
-    points INT DEFAULT 0,
+    points INT DEFAULT 0 CHECK (points >= 0),
     fees INT NOT NULL,
     valid_through SMALLDATETIME NOT NULL,
     FOREIGN KEY (phone) REFERENCES Customer(phone)
@@ -76,7 +76,7 @@ CREATE TABLE Vehicle (
     type VARCHAR(64) NOT NULL,
     bought_date DATE,
     original_price DECIMAL(32,2) CHECK(original_price > 0),
-    mileage INT,
+    mileage INT CHECK(mileage >= 0),
     FOREIGN KEY (branch_code) REFERENCES Branch(branch_code)
 );
 
@@ -88,7 +88,7 @@ CREATE TABLE VehicleForSale (
     added_date DATE DEFAULT GETDATE(),
     sold_date  DATE,
     sold_price DECIMAL(32,2) CHECK(sold_price > 0),
-    point_used INT,
+    point_used INT CHECK(point_used >= 0),
     FOREIGN KEY (vehicle_id) REFERENCES Vehicle(vehicle_id)
             ON UPDATE CASCADE,
     FOREIGN KEY (agent_name) REFERENCES Agent(agent_name)
@@ -137,10 +137,10 @@ CREATE TABLE RentRecord (
     pick_up_time SMALLDATETIME NOT NULL,
     expected_return_time SMALLDATETIME NOT NULL,
     actual_return_time SMALLDATETIME,
-    odometer INT,
+    odometer INT CHECK(odometer >= 0),
     is_tank_full BIT,
-    point_used INT,
-    point_earned INT,
+    point_used INT CHECK(point_used >= 0),
+    point_earned INT CHECK(point_earned >= 0),
     is_insurance_covered BIT,
     charge DECIMAL(32, 2),
     FOREIGN KEY (confirmation_number)
