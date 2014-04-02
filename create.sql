@@ -155,5 +155,6 @@ CREATE TABLE RentRecord (
     FOREIGN KEY (rate_id) REFERENCES RentalRate(rate_id)
             ON UPDATE CASCADE,
     CHECK(pick_up_time < expected_return_time),
-    CHECK(pick_up_time < actual_return_time)
+    CHECK(pick_up_time < actual_return_time),
+    CHECK(point_earned = point_earned*charge)
 );
