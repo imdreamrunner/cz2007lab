@@ -20,13 +20,13 @@ CREATE TABLE VehicleType (
 
 CREATE TABLE RentalRate (
     rate_id INT PRIMARY KEY IDENTITY(1,1),
-    w_rate DECIMAL(10,2) NOT NULL CHECK(w_rate > 0),
-    d_rate DECIMAL(10,2) NOT NULL CHECK(d_rate > 0),
-    h_rate DECIMAL(10,2) NOT NULL CHECK(h_rate > 0),
+    w_rate DECIMAL(10,2) NOT NULL CHECK(w_rate >= 0),
+    d_rate DECIMAL(10,2) NOT NULL CHECK(d_rate >= 0),
+    h_rate DECIMAL(10,2) NOT NULL CHECK(h_rate >= 0),
     CHECK (w_rate <= d_rate*7 AND d_rate <= h_rate*7),
-    w_ins DECIMAL(10,2) NOT NULL CHECK(w_ins > 0),
-    d_ins DECIMAL(10,2) NOT NULL CHECK(d_ins > 0),
-    h_ins DECIMAL(10,2) NOT NULL CHECK(h_ins > 0),
+    w_ins DECIMAL(10,2) NOT NULL CHECK(w_ins >= 0),
+    d_ins DECIMAL(10,2) NOT NULL CHECK(d_ins >= 0),
+    h_ins DECIMAL(10,2) NOT NULL CHECK(h_ins >= 0),
     CHECK (w_ins < d_ins*7 AND d_ins <= h_ins*7)
 );
 
@@ -47,7 +47,7 @@ CREATE TABLE Maintains (
 
 
 CREATE TABLE Customer (
-    phone VARCHAR(20) PRIMARY KEY,    -- should be digit? - but don't know how to set one.
+    phone VARCHAR(20) PRIMARY KEY,
     address VARCHAR(255),
     license_number VARCHAR(64) NOT NULL,
     name VARCHAR(64) NOT NULL
@@ -75,7 +75,7 @@ CREATE TABLE Vehicle (
     branch_code VARCHAR(64) NOT NULL,
     type VARCHAR(64) NOT NULL,
     bought_date DATE,
-    original_price DECIMAL(32,2),
+    original_price DECIMAL(32,2) CHECK(original_price > 0),
     mileage INT,
     FOREIGN KEY (branch_code) REFERENCES Branch(branch_code)
 );
@@ -87,14 +87,20 @@ CREATE TABLE VehicleForSale (
     phone VARCHAR(20) NOT NULL,
     added_date DATE DEFAULT GETDATE(),
     sold_date  DATE,
-    sold_price DECIMAL(32,2),
+    sold_price DECIMAL(32,2) CHECK(sold_price > 0),
+            -- Sold price could be larger than original price due to inflation.
     point_used INT,
     FOREIGN KEY (vehicle_id) REFERENCES Vehicle(vehicle_id)
             ON UPDATE CASCADE,
     FOREIGN KEY (agent_name) REFERENCES Agent(agent_name)
             ON UPDATE CASCADE,
     FOREIGN KEY (phone) REFERENCES Customer(phone)
-            ON UPDATE CASCADE
+            ON UPDATE CASCADE,
+    CHECK(added_date > (
+            SELECT bought_date FROM Vehicle
+            WHERE Vehicle.vehicle_id = VehicleForSale.vehicle_id
+        )),
+    CHECK(sold_date > added_date)
 );
 
 
@@ -113,15 +119,16 @@ CREATE TABLE ReservationRecord (
     type VARCHAR(64) NOT NULL,
     phone VARCHAR(20) NOT NULL,
     expected_pick_up_time SMALLDATETIME NOT NULL,    
-    expected_return_time SMALLDATETIME NOT NULL,        --must be after pickup time
-    estimated_charge DECIMAL(32, 2),                    --trigger to auto calculate?
+    expected_return_time SMALLDATETIME NOT NULL,
+    estimated_charge DECIMAL(32, 2),
     canceled BIT DEFAULT 0,
     FOREIGN KEY (branch_code) REFERENCES Branch(branch_code)
             ON UPDATE CASCADE,
     FOREIGN KEY (type) REFERENCES VehicleType(type)
             ON UPDATE CASCADE,
     FOREIGN KEY (phone) REFERENCES Customer(phone)
-            ON UPDATE CASCADE
+            ON UPDATE CASCADE,
+    CHECK(expected_pick_up_time < expected_return_time)
 );
 
 
@@ -131,7 +138,7 @@ CREATE TABLE RentRecord (
     phone VARCHAR(20) NOT NULL,
     card_number VARCHAR(64) NOT NULL,
     vehicle_id INT NOT NULL,
-    rate_id INT NOT NULL,       -- the only id of type int?
+    rate_id INT NOT NULL,
     pick_up_time SMALLDATETIME NOT NULL,
     expected_return_time SMALLDATETIME NOT NULL,
     actual_return_time SMALLDATETIME,
@@ -149,5 +156,7 @@ CREATE TABLE RentRecord (
     FOREIGN KEY (vehicle_id) REFERENCES Vehicle(vehicle_id)
             ON UPDATE CASCADE,
     FOREIGN KEY (rate_id) REFERENCES RentalRate(rate_id)
-            ON UPDATE CASCADE
+            ON UPDATE CASCADE,
+    CHECK(pick_up_time < expected_return_time),
+    CHECK(pick_up_time < actual_return_time)
 );
