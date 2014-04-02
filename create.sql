@@ -84,9 +84,9 @@ CREATE TABLE Vehicle (
 
 CREATE TABLE VehicleForSale (
     vehicle_id INT PRIMARY KEY,
-    agent_name VARCHAR(64) NOT NULL,
-    phone VARCHAR(20) NOT NULL,
     added_date DATE DEFAULT GETDATE(),
+    agent_name VARCHAR(64),
+    phone VARCHAR(20),
     sold_date  DATE,
     sold_price DECIMAL(32,2) CHECK(sold_price > 0),
     point_used INT CHECK(point_used >= 0),
@@ -156,5 +156,5 @@ CREATE TABLE RentRecord (
             ON UPDATE CASCADE,
     CHECK(pick_up_time < expected_return_time),
     CHECK(pick_up_time < actual_return_time),
-    CHECK(point_earned = point_earned*charge)
+    CHECK(point_earned = FLOOR(charge/5))
 );

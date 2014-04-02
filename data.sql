@@ -33,7 +33,7 @@ INSERT INTO VehicleType (type, is_trunk) VALUES
 INSERT INTO RentalRate (w_rate, d_rate, h_rate, w_ins, d_ins, h_ins) VALUES
     (700, 100, 10, 700, 100, 10),
     (1400, 200, 20, 1400, 200, 20),
-    (2100, 300, 40, 1400, 200, 20)
+    (2100, 300, 40, 1400, 200, 20),
     (600, 100, 10, 500, 100, 10);
 
 
@@ -73,7 +73,7 @@ INSERT INTO Agent VALUES
 
 
 INSERT INTO Vehicle (branch_code, type, bought_date, original_price, mileage) VALUES
-    ('sgp1', 'Economy', '2002-12-01', 5000, 256), # 1
+    ('sgp1', 'Economy', '2002-12-01', 5000, 256), -- 1
     ('sgp1', 'Economy', '2012-12-01', 8000, 255),
     ('sgp1', 'Economy', '2012-12-01', 8000, 255),
     ('sgp1', 'Economy', '2012-12-01', 8000, 255),
@@ -82,7 +82,7 @@ INSERT INTO Vehicle (branch_code, type, bought_date, original_price, mileage) VA
     ('sgp1', 'Compact', '2012-12-01', 8000, 255),
     ('sgp1', 'Compact', '2012-12-01', 8000, 255),
     ('sgp1', 'Compact', '2012-12-01', 8000, 255),
-    ('sgp2', 'Economy', '2012-12-01', 8000, 255), # 10
+    ('sgp2', 'Economy', '2012-12-01', 8000, 255), -- 10
     ('sgp2', 'Economy', '2012-12-01', 8000, 255),
     ('sgp2', 'Economy', '2012-12-01', 8000, 255),
     ('sgp2', 'Economy', '2012-12-01', 8000, 255),
@@ -93,10 +93,10 @@ INSERT INTO Vehicle (branch_code, type, bought_date, original_price, mileage) VA
 
 
 INSERT INTO VehicleForSale VALUES
-    (1, 'agent1', '12345678', '2014-04-01', '2014-04-02', 2000, 200),
+    (1, '2014-04-01', 'agent1', '12345678', '2014-04-02', 2000, 200),
     (2, NULL, NULL, NULL, NULL, NULL, NULL),
-    (3, NULL, NULL, '2014-1-1', NULL, NULL, NULL),
-    (3, NULL, NULL, '1999-1-1', NULL, NULL, NULL);
+    (3, '2014-1-1', NULL, NULL, NULL, NULL, NULL),
+    (10, '1999-1-1', NULL, NULL, NULL, NULL, NULL);
 
 
 INSERT INTO CreditCard VALUES
