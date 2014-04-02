@@ -50,7 +50,8 @@ CREATE TABLE Customer (
     phone VARCHAR(20) PRIMARY KEY,
     address VARCHAR(255),
     license_number VARCHAR(64) NOT NULL,
-    name VARCHAR(64) NOT NULL
+    name VARCHAR(64) NOT NULL,
+    UNIQUE(license_number)
 );
 
 
