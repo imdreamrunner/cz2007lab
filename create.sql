@@ -249,7 +249,7 @@ GO
 
 
 -- They only need to provide
--- (confirmation_number/phone, card_number, vehicle_id, expected_return_time)
+-- (confirmation_number/phone, card_number, vehicle_id, expected_return_time?)
 
 CREATE TRIGGER CreateRentFromReservation
     ON RentFromReservation
@@ -259,15 +259,26 @@ BEGIN
     DECLARE @confirmation_number VARCHAR(64)
     DECLARE @phone VARCHAR(20)
     DECLARE @expected_return_time SMALLDATETIME
+    DECLARE @rate_id INT
+    DECLARE @branch_code VARCHAR(64)
+    DECLARE @type VARCHAR(64)
+    -- get reservation data
     if UPDATE (confirmation_number)
     BEGIN
         SELECT @phone                = phone,
                @confirmation_number  = confirmation_number,
-               @expected_return_time = expected_return_time
+               @expected_return_time = expected_return_time,
+               @branch_code          = branch_code,
+               @type                 = type
           FROM ReservationRecord RS
          WHERE RS.confirmation_number = (SELECT confirmation_number
-                                           FROM INSEART)
+                                           FROM INSERTED)
     END
+    -- get rental rate
+    SELECT @rate_id = rate_id
+      FROM Maintains
+     WHERE type = @type AND branch_code = @branch_code
+    -- insert data
     INSERT INTO RentRecord
         (
         confirmation_number,
@@ -281,6 +292,7 @@ BEGIN
                @phone,
                card_number,
                vehicle_id,
+               @rate_id,
                @expected_return_time
           FROM INSERTED
 END;
