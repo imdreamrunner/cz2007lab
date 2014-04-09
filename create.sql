@@ -161,27 +161,9 @@ CREATE TABLE RentRecord (
 GO
 
 
--- To make sure the added_date of a VehicleForSale record
--- is after the bought date of the vehicle.
-
-CREATE TRIGGER CheckAddedDate
-    ON VehicleForSale
- AFTER INSERT,UPDATE
-AS 
-BEGIN
-    IF EXISTS (
-        SELECT *
-          FROM Vehicle 
-          JOIN INSERTED
-            ON Vehicle.vehicle_id = INSERTED.vehicle_id
-         WHERE Vehicle.bought_date > INSERTED.added_date
-        )
-        ROLLBACK TRANSACTION;
-END
-GO
-
--- 奇怪的 View 们
-
+-------------------
+-- 奇怪的 View 们 --
+-------------------
 
 CREATE VIEW ReservationView
 AS
@@ -203,6 +185,74 @@ SELECT confirmation_number,
          ON B.branch_code = RS.branch_code
 GO
 
+
+CREATE VIEW RentView
+AS
+SELECT rent_id,
+       confirmation_number,
+       pick_up_time,
+       expected_return_time,
+       actual_return_time,
+       odometer,
+       is_tank_full,
+       point_used,
+       point_earned,
+       is_insurance_covered,
+       charge,
+       C.*,
+       RT.*,
+       CC.card_number AS card_number,
+       CC.expired_date AS expired_date,
+       V.*
+  FROM RentRecord RE
+       JOIN Customer C
+         ON RE.phone = C.phone
+       JOIN RentalRate RT
+         ON RT.rate_id = RE.rate_id
+       JOIN CreditCard CC
+         ON CC.card_number = RE.card_number
+       JOIN Vehicle V
+         ON V.vehicle_id = RE.vehicle_id
+       JOIN Branch B
+         ON B.branch_code = V.branch_code
+         
+GO
+
+
+CREATE VIEW RentFromReservation
+AS
+SELECT REV.*,
+       expected_pick_up_time,
+       RS.expected_return_time AS expected_return_time_when_reserve
+  FROM RentView REV,
+       ReservationRecord RS
+ WHERE REV.confirmation_number = RS.confirmation_number;
+GO
+
+
+----------------------
+-- 奇怪的 Trigger 们 --
+----------------------
+
+
+-- To make sure the added_date of a VehicleForSale record
+-- is after the bought date of the vehicle.
+
+CREATE TRIGGER CheckAddedDate
+    ON VehicleForSale
+ AFTER INSERT,UPDATE
+AS 
+BEGIN
+    IF EXISTS (
+        SELECT *
+          FROM Vehicle 
+          JOIN INSERTED
+            ON Vehicle.vehicle_id = INSERTED.vehicle_id
+         WHERE Vehicle.bought_date > INSERTED.added_date
+        )
+        ROLLBACK TRANSACTION;
+END
+GO
 
 
 -- Create reservation.
@@ -275,49 +325,6 @@ BEGIN
 END
 GO
 
-CREATE VIEW RentView
-AS
-SELECT rent_id,
-       confirmation_number,
-       pick_up_time,
-       expected_return_time,
-       actual_return_time,
-       odometer,
-       is_tank_full,
-       point_used,
-       point_earned,
-       is_insurance_covered,
-       charge,
-       C.*,
-       RT.*,
-       CC.card_number AS card_number,
-       CC.expired_date AS expired_date,
-       V.*
-  FROM RentRecord RE
-       JOIN Customer C
-         ON RE.phone = C.phone
-       JOIN RentalRate RT
-         ON RT.rate_id = RE.rate_id
-       JOIN CreditCard CC
-         ON CC.card_number = RE.card_number
-       JOIN Vehicle V
-         ON V.vehicle_id = RE.vehicle_id
-       JOIN Branch B
-         ON B.branch_code = V.branch_code
-         
-GO
-
-
-CREATE VIEW RentFromReservation
-AS
-SELECT REV.*,
-       expected_pick_up_time,
-       RS.expected_return_time AS expected_return_time_when_reserve
-  FROM RentView REV,
-       ReservationRecord RS
- WHERE REV.confirmation_number = RS.confirmation_number;
-GO
-
 
 -- They only need to provide
 -- (confirmation_number, card_number, vehicle_id, expected_return_time?)
@@ -371,3 +378,5 @@ BEGIN
                @expected_return_time
           FROM INSERTED
 END;
+
+-- 
