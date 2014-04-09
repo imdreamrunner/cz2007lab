@@ -115,7 +115,7 @@ CREATE TABLE ReservationRecord (
     phone VARCHAR(20) NOT NULL,
     expected_pick_up_time SMALLDATETIME NOT NULL,    
     expected_return_time SMALLDATETIME NOT NULL,
-    is_insurance_covered BIT,
+    is_insurance_covered BIT NOT NULL DEFAULT 1,
     estimated_charge DECIMAL(32, 2),
     canceled BIT NOT NULL DEFAULT 0,
     FOREIGN KEY (branch_code) REFERENCES Branch(branch_code)
@@ -177,12 +177,12 @@ BEGIN
          WHERE Vehicle.bought_date > INSERTED.added_date
         )
         ROLLBACK TRANSACTION;
-END;
-
+END
+GO
 
 -- 奇怪的 View 们
 
-GO
+
 CREATE VIEW ReservationView
 AS
 SELECT confirmation_number,
@@ -203,6 +203,43 @@ SELECT confirmation_number,
          ON B.branch_code = RS.branch_code
 GO
 
+
+
+-- Create reservation
+
+CREATE TRIGGER CreateReservation
+    ON ReservationView
+    INSTEAD OF INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @confirmation_number VARCHAR(64)
+    DECLARE @estimated_charge DECIMAL(32, 2)
+    SELECT @confirmation_number = CONVERT(varchar(10), NEWID())
+    SET @estimated_charge = 10
+    INSERT INTO ReservationRecord
+        (
+        confirmation_number,
+        branch_code,
+        type,
+        phone,
+        expected_pick_up_time,    
+        expected_return_time,
+        is_insurance_covered,
+        estimated_charge
+        )
+        SELECT @confirmation_number,
+               branch_code,
+               type,
+               phone,
+               expected_pick_up_time,
+               expected_return_time,
+               is_insurance_covered,
+               @estimated_charge
+          FROM INSERTED
+
+END
+GO
 
 CREATE VIEW RentView
 AS
@@ -249,13 +286,18 @@ GO
 
 
 -- They only need to provide
--- (confirmation_number/phone, card_number, vehicle_id, expected_return_time?)
+-- (confirmation_number, card_number, vehicle_id, expected_return_time?)
 
 CREATE TRIGGER CreateRentFromReservation
     ON RentFromReservation
     INSTEAD OF INSERT
 AS 
 BEGIN
+    -- No for-each-row implememtation in MS SQL server.
+    -- We can achieve the same goal with cursor.
+    -- But in this case it is rarely happen.
+    -- So we only allow insert one row per statement.
+    SET NOCOUNT ON;
     DECLARE @confirmation_number VARCHAR(64)
     DECLARE @phone VARCHAR(20)
     DECLARE @expected_return_time SMALLDATETIME
