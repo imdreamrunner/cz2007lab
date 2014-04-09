@@ -170,17 +170,17 @@ GO
 
 CREATE VIEW VehicleView
 AS
-SELECT vehicle_id
-       bought_date
-       original_price
-       mileage
-       B.*
+SELECT vehicle_id,
+       bought_date,
+       original_price,
+       mileage,
+       B.*,
        T.*
   FROM Vehicle V
        JOIN Branch B
          ON B.branch_code = V.branch_code
        JOIN VehicleType T
-         ON B.type = T.type
+         ON V.type = T.type
 GO
 
 
@@ -410,10 +410,9 @@ BEGIN
     IF (SELECT COUNT(*) FROM INSERTED) > 1
         THROW 51000, 'Only one row at a time.', 1
     SET NOCOUNT ON
-    IF NOT NULL(SELECT actual_return_time FROM INSERTED)
+    IF (SELECT actual_return_time FROM INSERTED) IS NOT NULL
     BEGIN
         DECLARE @charge DECIMAL(32, 2)
-        DECLARE @rate_id INT
         DECLARE @length INT
         DECLARE @week INT
         DECLARE @day INT
@@ -425,21 +424,21 @@ BEGIN
         SET @week = FLOOR(@length/(7*24))
         SET @day  = FLOOR((@length - @week*(7*24))/24)
         SET @hour = @length - @week*(7*24) - @day*24
-        -- get rate_id
-        SELECT @rate_id = rate_id
-          FROM VehicleView, INSERTED
-         WHERE VehicleView.vehicle_id = INSERTED.vehicle_id
+        -- calculate charge
         IF (SELECT is_insurance_covered FROM INSERTED) > 0
             SELECT @charge = (w_rate + w_ins) * @week +
                              (d_rate + d_ins) * @day +
                              (h_rate + h_ins) * @hour
-              FROM RentalRate, INSERTED
-             WHERE RentalRate.rate_id = @rate_id
+              FROM INSERTED, RentalRate RT
+             WHERE INSERTED.rate_id = RT.rate_id
         ELSE
             SELECT @charge = w_rate * @week +
                              d_rate * @day +
                              h_rate * @hour
-              FROM RentalRate, INSERTED
-             WHERE RentalRate.rate_id = @rate_id
+              FROM INSERTED, RentalRate RT
+             WHERE INSERTED.rate_id = RT.rate_id
+        UPDATE RentRecord
+           SET charge = @charge
+         WHERE rent_id = (SELECT rent_id FROM INSERTED)
     END
 END
