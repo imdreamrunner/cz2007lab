@@ -259,16 +259,16 @@ BEGIN
     DECLARE @confirmation_number VARCHAR(64)
     DECLARE @phone VARCHAR(20)
     DECLARE @expected_return_time SMALLDATETIME
-    if INSERT (confirmation_number)
+    if UPDATE (confirmation_number)
     BEGIN
-        SELECT @phone                = phone
-               @confirmation_number  = confirmation_number
+        SELECT @phone                = phone,
+               @confirmation_number  = confirmation_number,
                @expected_return_time = expected_return_time
           FROM ReservationRecord RS
          WHERE RS.confirmation_number = (SELECT confirmation_number
                                            FROM INSEART)
     END
-    INSEART INTO RentRecord
+    INSERT INTO RentRecord
         (
         confirmation_number,
         phone,
