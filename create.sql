@@ -5,7 +5,7 @@ CREATE TABLE City (
 
 CREATE TABLE Branch (
     branch_code VARCHAR(64) PRIMARY KEY,
-    city VARCHAR(64) NOT NULL,
+    city VARCHAR(64),
     location VARCHAR(255),
     FOREIGN KEY (city) REFERENCES City(city) ON UPDATE CASCADE
 );
@@ -57,7 +57,7 @@ CREATE TABLE Customer (
 
 CREATE TABLE Member (
     phone VARCHAR(20) PRIMARY KEY,
-    points INT DEFAULT 0 CHECK (points >= 0),
+    points INT NOT NULL DEFAULT 0 CHECK (points >= 0),
     fees DECIMAL(32,2) NOT NULL,
     valid_through DATE NOT NULL,
     FOREIGN KEY (phone) REFERENCES Customer(phone)
