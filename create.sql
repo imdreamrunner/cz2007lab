@@ -205,18 +205,34 @@ GO
 
 
 
--- Create reservation
+-- Create reservation.
+-- One reservation at a time.
 
 CREATE TRIGGER CreateReservation
     ON ReservationView
     INSTEAD OF INSERT
 AS
 BEGIN
+    -- No for-each-row implememtation in MS SQL server.
+    -- We can achieve the same goal with cursor.
+    -- But in this case it is rarely happen.
+    -- So we only allow insert one row per statement.
     SET NOCOUNT ON;
-    DECLARE @confirmation_number VARCHAR(64)
     DECLARE @estimated_charge DECIMAL(32, 2)
-    SELECT @confirmation_number = CONVERT(varchar(10), NEWID())
-    SET @estimated_charge = 10
+    DECLARE @rate_id INT
+    DECLARE @length INT
+    -- get length
+    SELECT @length = DATEDIFF(hour, expected_pick_up_time,
+                              expected_return_time)
+      FROM INSERTED
+    -- get rate_id
+    SELECT @rate_id = rate_id
+      FROM Maintains, INSERTED
+     WHERE Maintains.branch_code = INSERTED.branch_code
+           AND Maintains.type = INSERTED.type
+    SELECT @estimated_charge = d_rate * @length
+      FROM RentalRate, INSERTED
+     WHERE RentalRate.rate_id = @rate_id
     INSERT INTO ReservationRecord
         (
         confirmation_number,
@@ -228,7 +244,7 @@ BEGIN
         is_insurance_covered,
         estimated_charge
         )
-        SELECT @confirmation_number,
+        SELECT SUBSTRING(CONVERT(varchar(40), NEWID()),0,9),
                branch_code,
                type,
                phone,
@@ -287,16 +303,13 @@ GO
 
 -- They only need to provide
 -- (confirmation_number, card_number, vehicle_id, expected_return_time?)
+-- One rental at a time.
 
 CREATE TRIGGER CreateRentFromReservation
     ON RentFromReservation
     INSTEAD OF INSERT
 AS 
 BEGIN
-    -- No for-each-row implememtation in MS SQL server.
-    -- We can achieve the same goal with cursor.
-    -- But in this case it is rarely happen.
-    -- So we only allow insert one row per statement.
     SET NOCOUNT ON;
     DECLARE @confirmation_number VARCHAR(64)
     DECLARE @phone VARCHAR(20)
