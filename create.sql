@@ -45,7 +45,6 @@ CREATE TABLE Maintains (
 );
 
 
-
 CREATE TABLE Customer (
     phone VARCHAR(20) PRIMARY KEY,
     address VARCHAR(255),
@@ -158,3 +157,22 @@ CREATE TABLE RentRecord (
     CHECK(pick_up_time < actual_return_time),
     CHECK(point_earned = FLOOR(charge/5))
 );
+
+GO
+
+CREATE TRIGGER CheckSoldDate
+   ON VehicleForSale
+   AFTER INSERT,UPDATE
+AS 
+BEGIN
+    IF EXISTS (
+        SELECT * FROM Vehicle 
+                 JOIN INSERTED
+                   ON Vehicle.vehicle_id = INSERTED.vehicle_id
+                WHERE (Vehicle.bought_date > INSERTED.added_date)
+                      OR (Vehicle.bought_date > INSERTED.sold_date)
+        )
+        ROLLBACK TRANSACTION;
+END;
+
+GO
