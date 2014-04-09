@@ -219,21 +219,37 @@ BEGIN
     -- So we only allow insert one row per statement.
     IF (SELECT COUNT(*) FROM INSERTED) > 1
         THROW 51000, 'Only one row at a time.', 1
+    SET NOCOUNT ON
     DECLARE @estimated_charge DECIMAL(32, 2)
     DECLARE @rate_id INT
     DECLARE @length INT
+    DECLARE @week INT
+    DECLARE @day INT
+    DECLARE @hour INT
     -- get length
     SELECT @length = DATEDIFF(hour, expected_pick_up_time,
                               expected_return_time)
       FROM INSERTED
+    SET @week = FLOOR(@length/(7*24))
+    SET @day  = FLOOR((@length - @week*(7*24))/24)
+    SET @hour = @length - @week*(7*24) - @day*24
     -- get rate_id
     SELECT @rate_id = rate_id
       FROM Maintains, INSERTED
      WHERE Maintains.branch_code = INSERTED.branch_code
            AND Maintains.type = INSERTED.type
-    SELECT @estimated_charge = d_rate * @length
-      FROM RentalRate, INSERTED
-     WHERE RentalRate.rate_id = @rate_id
+    IF (SELECT is_insurance_covered FROM INSERTED) > 0
+        SELECT @estimated_charge = (w_rate + w_ins) * @week +
+                                   (d_rate + d_ins) * @day +
+                                   (h_rate + h_ins) * @hour
+          FROM RentalRate, INSERTED
+         WHERE RentalRate.rate_id = @rate_id
+    ELSE
+        SELECT @estimated_charge = w_rate * @week +
+                                   d_rate * @day +
+                                   h_rate * @hour
+          FROM RentalRate, INSERTED
+         WHERE RentalRate.rate_id = @rate_id
     INSERT INTO ReservationRecord
         (
         confirmation_number,
@@ -254,7 +270,8 @@ BEGIN
                is_insurance_covered,
                @estimated_charge
           FROM INSERTED
-
+    PRINT N'The reservation is made successfully. The estimated charge is '
+          + RTRIM(CAST(@estimated_charge AS NVARCHAR(255)));
 END
 GO
 
@@ -313,6 +330,7 @@ AS
 BEGIN
     IF (SELECT COUNT(*) FROM INSERTED) > 1
         THROW 51000, 'Only one row at a time.', 1
+    SET NOCOUNT ON
     DECLARE @confirmation_number VARCHAR(64)
     DECLARE @phone VARCHAR(20)
     DECLARE @expected_return_time SMALLDATETIME
