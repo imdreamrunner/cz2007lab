@@ -131,12 +131,12 @@ CREATE TABLE ReservationRecord (
 CREATE TABLE RentRecord (
     rent_id BIGINT PRIMARY KEY IDENTITY(1,1),
     confirmation_number VARCHAR(64),
-    phone VARCHAR(20) NOT NULL,
+    phone VARCHAR(20),
     card_number VARCHAR(64),
     vehicle_id INT NOT NULL,
-    rate_id INT NOT NULL,
-    pick_up_time SMALLDATETIME NOT NULL,
-    expected_return_time SMALLDATETIME NOT NULL,
+    rate_id INT,
+    pick_up_time SMALLDATETIME NOT NULL DEFAULT GETDATE(),
+    expected_return_time SMALLDATETIME,
     actual_return_time SMALLDATETIME,
     odometer INT CHECK(odometer >= 0),
     is_tank_full BIT,
@@ -165,8 +165,8 @@ GO
 -- is after the bought date of the vehicle.
 
 CREATE TRIGGER CheckAddedDate
-   ON VehicleForSale
-   AFTER INSERT,UPDATE
+    ON VehicleForSale
+ AFTER INSERT,UPDATE
 AS 
 BEGIN
     IF EXISTS (
@@ -246,3 +246,41 @@ SELECT REV.*,
        ReservationRecord RS
  WHERE REV.confirmation_number = RS.confirmation_number;
 GO
+
+
+-- They only need to provide
+-- (confirmation_number/phone, card_number, vehicle_id, expected_return_time)
+
+CREATE TRIGGER CreateRentFromReservation
+    ON RentFromReservation
+    INSTEAD OF INSERT
+AS 
+BEGIN
+    DECLARE @confirmation_number VARCHAR(64)
+    DECLARE @phone VARCHAR(20)
+    DECLARE @expected_return_time SMALLDATETIME
+    if INSERT (confirmation_number)
+    BEGIN
+        SELECT @phone                = phone
+               @confirmation_number  = confirmation_number
+               @expected_return_time = expected_return_time
+          FROM ReservationRecord RS
+         WHERE RS.confirmation_number = (SELECT confirmation_number
+                                           FROM INSEART)
+    END
+    INSEART INTO RentRecord
+        (
+        confirmation_number,
+        phone,
+        card_number,
+        vehicle_id,
+        rate_id,
+        expected_return_time
+        )
+        SELECT confirmation_number,
+               @phone,
+               card_number,
+               vehicle_id,
+               @expected_return_time
+          FROM INSERTED
+END;
