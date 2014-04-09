@@ -118,7 +118,7 @@ CREATE TABLE ReservationRecord (
     expected_return_time SMALLDATETIME NOT NULL,
     is_insurance_covered BIT,
     estimated_charge DECIMAL(32, 2),
-    canceled BIT DEFAULT 0,
+    canceled BIT NOT NULL DEFAULT 0,
     FOREIGN KEY (branch_code) REFERENCES Branch(branch_code)
             ON UPDATE CASCADE,
     FOREIGN KEY (type) REFERENCES VehicleType(type)
@@ -133,7 +133,7 @@ CREATE TABLE RentRecord (
     rent_id BIGINT PRIMARY KEY IDENTITY(1,1),
     confirmation_number VARCHAR(64),
     phone VARCHAR(20) NOT NULL,
-    card_number VARCHAR(64) NOT NULL,
+    card_number VARCHAR(64),
     vehicle_id INT NOT NULL,
     rate_id INT NOT NULL,
     pick_up_time SMALLDATETIME NOT NULL,
