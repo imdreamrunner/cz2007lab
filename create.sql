@@ -175,12 +175,18 @@ SELECT vehicle_id,
        original_price,
        mileage,
        B.*,
-       T.*
+       T.*,
+       RT.*
   FROM Vehicle V
        JOIN Branch B
          ON B.branch_code = V.branch_code
        JOIN VehicleType T
          ON V.type = T.type
+       JOIN Maintains M
+         ON M.branch_code = V.branch_code
+            AND M.type = V.type
+       JOIN RentalRate RT
+         ON RT.rate_id = M.rate_id
 GO
 
 
@@ -344,13 +350,13 @@ BEGIN
 END
 GO
 
-
--- They only need to provide
+-- Create rent record.
+-- If confirmation number is provided, they only need to provide
 -- (confirmation_number, card_number, vehicle_id, expected_return_time?)
 -- One rental at a time.
 
 CREATE TRIGGER CreateRentFromReservation
-    ON RentFromReservation
+    ON RentView
     INSTEAD OF INSERT
 AS 
 BEGIN
@@ -361,40 +367,58 @@ BEGIN
     DECLARE @phone VARCHAR(20)
     DECLARE @expected_return_time SMALLDATETIME
     DECLARE @rate_id INT
-    DECLARE @branch_code VARCHAR(64)
-    DECLARE @type VARCHAR(64)
+    DECLARE @is_insurance_covered BIT
     -- get reservation data
     if UPDATE (confirmation_number)
     BEGIN
+        -- get data from reservation
+        DECLARE @branch_code VARCHAR(64)
+        DECLARE @type VARCHAR(64)
         SELECT @phone                = phone,
                @confirmation_number  = confirmation_number,
                @expected_return_time = expected_return_time,
                @branch_code          = branch_code,
                @type                 = type
+               @is_insurance_covered = is_insurance_covered
           FROM ReservationRecord RS
          WHERE RS.confirmation_number = (SELECT confirmation_number
                                            FROM INSERTED)
+        -- get rental rate
+        SELECT @rate_id = rate_id
+          FROM Maintains
+         WHERE type = @type AND branch_code = @branch_code
     END
-    -- get rental rate
-    SELECT @rate_id = rate_id
-      FROM Maintains
-     WHERE type = @type AND branch_code = @branch_code
+    ELSE
+    BEGIN
+        -- get data from inserted data
+        SET @confirmation_number = NULL
+        SELECT @phone                = phone
+               @confirmation_number  = NULL
+               @expected_return_time = expected_return_time
+               @is_insurance_covered = is_insurance_covered
+          FROM INSERTED
+        SELECT @rate_id = rate_id
+          FROM VehicleView VV, INSERTED
+         WHERE VV.vehicle_id = INSERTED.vehicle_id
+    END
     -- insert data
     INSERT INTO RentRecord
         (
-        confirmation_number,
-        phone,
-        card_number,
-        vehicle_id,
-        rate_id,
-        expected_return_time
+            confirmation_number,
+            phone,
+            card_number,
+            vehicle_id,
+            rate_id,
+            expected_return_time,
+            is_insurance_covered
         )
         SELECT confirmation_number,
                @phone,
                card_number,
                vehicle_id,
                @rate_id,
-               @expected_return_time
+               @expected_return_time,
+               @is_insurance_covered
           FROM INSERTED
 END
 GO
@@ -438,7 +462,8 @@ BEGIN
               FROM INSERTED, RentalRate RT
              WHERE INSERTED.rate_id = RT.rate_id
         UPDATE RentRecord
-           SET charge = @charge
+           SET charge = @charge,
+               point_earned = FLOOR(@charge/5)
          WHERE rent_id = (SELECT rent_id FROM INSERTED)
     END
 END
