@@ -217,8 +217,8 @@ BEGIN
     -- We can achieve the same goal with cursor.
     -- But in this case it is rarely happen.
     -- So we only allow insert one row per statement.
-    IF (SELECT COUNT(*) FROM INSERTED) > 0
-        THROW 'Only one row at a time.'
+    IF (SELECT COUNT(*) FROM INSERTED) > 1
+        THROW 51000, 'Only one row at a time.', 1
     DECLARE @estimated_charge DECIMAL(32, 2)
     DECLARE @rate_id INT
     DECLARE @length INT
@@ -311,8 +311,8 @@ CREATE TRIGGER CreateRentFromReservation
     INSTEAD OF INSERT
 AS 
 BEGIN
-    IF (SELECT COUNT(*) FROM INSERTED) > 0
-        THROW 'Only one row at a time.'
+    IF (SELECT COUNT(*) FROM INSERTED) > 1
+        THROW 51000, 'Only one row at a time.', 1
     DECLARE @confirmation_number VARCHAR(64)
     DECLARE @phone VARCHAR(20)
     DECLARE @expected_return_time SMALLDATETIME
