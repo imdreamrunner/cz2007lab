@@ -78,6 +78,9 @@ CREATE TABLE Vehicle (
     original_price DECIMAL(32,2) CHECK(original_price > 0),
     mileage INT CHECK(mileage >= 0),
     FOREIGN KEY (branch_code) REFERENCES Branch(branch_code)
+        ON UPDATE CASCADE,
+    FOREIGN KEY (type) REFERENCES VehicleType(type)
+        ON UPDATE CASCADE
 );
 
 
@@ -164,6 +167,22 @@ GO
 -------------------
 -- 奇怪的 View 们 --
 -------------------
+
+CREATE VIEW VehicleView
+AS
+SELECT vehicle_id
+       bought_date
+       original_price
+       mileage
+       B.*
+       T.*
+  FROM Vehicle V
+       JOIN Branch B
+         ON B.branch_code = V.branch_code
+       JOIN VehicleType T
+         ON B.type = T.type
+GO
+
 
 CREATE VIEW ReservationView
 AS
@@ -377,6 +396,50 @@ BEGIN
                @rate_id,
                @expected_return_time
           FROM INSERTED
-END;
+END
+GO
 
--- 
+
+-- Calculate rental charge
+
+CREATE TRIGGER CalculateRentalCharge
+    ON RentRecord
+    AFTER UPDATE
+AS
+BEGIN
+    IF (SELECT COUNT(*) FROM INSERTED) > 1
+        THROW 51000, 'Only one row at a time.', 1
+    SET NOCOUNT ON
+    IF NOT NULL(SELECT actual_return_time FROM INSERTED)
+    BEGIN
+        DECLARE @charge DECIMAL(32, 2)
+        DECLARE @rate_id INT
+        DECLARE @length INT
+        DECLARE @week INT
+        DECLARE @day INT
+        DECLARE @hour INT
+        -- get length
+        SELECT @length = DATEDIFF(hour, pick_up_time,
+                                  actual_return_time)
+          FROM INSERTED
+        SET @week = FLOOR(@length/(7*24))
+        SET @day  = FLOOR((@length - @week*(7*24))/24)
+        SET @hour = @length - @week*(7*24) - @day*24
+        -- get rate_id
+        SELECT @rate_id = rate_id
+          FROM VehicleView, INSERTED
+         WHERE VehicleView.vehicle_id = INSERTED.vehicle_id
+        IF (SELECT is_insurance_covered FROM INSERTED) > 0
+            SELECT @charge = (w_rate + w_ins) * @week +
+                             (d_rate + d_ins) * @day +
+                             (h_rate + h_ins) * @hour
+              FROM RentalRate, INSERTED
+             WHERE RentalRate.rate_id = @rate_id
+        ELSE
+            SELECT @charge = w_rate * @week +
+                             d_rate * @day +
+                             h_rate * @hour
+              FROM RentalRate, INSERTED
+             WHERE RentalRate.rate_id = @rate_id
+    END
+END
