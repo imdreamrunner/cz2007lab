@@ -160,19 +160,89 @@ CREATE TABLE RentRecord (
 
 GO
 
-CREATE TRIGGER CheckSoldDate
+
+-- To make sure the added_date of a VehicleForSale record
+-- is after the bought date of the vehicle.
+
+CREATE TRIGGER CheckAddedDate
    ON VehicleForSale
    AFTER INSERT,UPDATE
 AS 
 BEGIN
     IF EXISTS (
-        SELECT * FROM Vehicle 
-                 JOIN INSERTED
-                   ON Vehicle.vehicle_id = INSERTED.vehicle_id
-                WHERE (Vehicle.bought_date > INSERTED.added_date)
-                      OR (Vehicle.bought_date > INSERTED.sold_date)
+        SELECT *
+          FROM Vehicle 
+          JOIN INSERTED
+            ON Vehicle.vehicle_id = INSERTED.vehicle_id
+         WHERE Vehicle.bought_date > INSERTED.added_date
         )
         ROLLBACK TRANSACTION;
 END;
 
+
+-- 奇怪的 View 们
+
+GO
+CREATE VIEW ReservationView
+AS
+SELECT confirmation_number,
+       expected_pick_up_time,
+       expected_return_time,
+       is_insurance_covered,
+       estimated_charge,
+       canceled,
+       C.*,
+       T.*,
+       B.*
+  FROM ReservationRecord RS
+       JOIN Customer C
+         ON RS.phone = C.phone
+       JOIN VehicleType T
+         ON T.type = RS.type
+       JOIN Branch B
+         ON B.branch_code = RS.branch_code
+GO
+
+
+CREATE VIEW RentView
+AS
+SELECT rent_id,
+       confirmation_number,
+       pick_up_time,
+       expected_return_time,
+       actual_return_time,
+       odometer,
+       is_tank_full,
+       point_used,
+       point_earned,
+       is_insurance_covered,
+       charge,
+       C.*,
+       RT.*,
+       CC.card_number AS card_number,
+       CC.expired_date AS expired_date,
+       V.*
+  FROM RentRecord RE
+       JOIN Customer C
+         ON RE.phone = C.phone
+       JOIN RentalRate RT
+         ON RT.rate_id = RE.rate_id
+       JOIN CreditCard CC
+         ON CC.card_number = RE.card_number
+       JOIN Vehicle V
+         ON V.vehicle_id = RE.vehicle_id
+       JOIN Branch B
+         ON B.branch_code = V.branch_code
+         
+GO
+
+
+CREATE VIEW RentFromReservation
+AS
+SELECT REV.*,
+       expected_pick_up_time,
+       RS.expected_return_time AS expected_return_time_when_reserve
+  FROM RentView REV,
+       ReservationRecord RS
+ WHERE REV.confirmation_number = RS.confirmation_number;
 GO

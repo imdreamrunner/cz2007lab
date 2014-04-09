@@ -82,7 +82,7 @@ INSERT INTO Vehicle (branch_code, type, bought_date, original_price, mileage) VA
     ('sgp1', 'Compact', '2012-12-01', 8000, 255),
     ('sgp1', 'Compact', '2012-12-01', 8000, 255),
     ('sgp1', 'Compact', '2012-12-01', 8000, 255),
-    ('sgp2', 'Economy', '2012-12-01', 8000, 255), -- 10
+    ('sgp2', 'Economy', '1998-12-01', 8000, 255), -- 10
     ('sgp2', 'Economy', '2012-12-01', 8000, 255),
     ('sgp2', 'Economy', '2012-12-01', 8000, 255),
     ('sgp2', 'Economy', '2012-12-01', 8000, 255),
