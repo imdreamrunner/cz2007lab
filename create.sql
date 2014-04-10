@@ -352,7 +352,7 @@ GO
 
 -- Create rent record.
 -- If confirmation number is provided, they only need to provide
--- (confirmation_number, card_number, vehicle_id, expected_return_time?)
+-- (confirmation_number, vehicle_id, card_number?)
 -- One rental at a time.
 
 CREATE TRIGGER CreateRentFromReservation
@@ -368,8 +368,8 @@ BEGIN
     DECLARE @expected_return_time SMALLDATETIME
     DECLARE @rate_id INT
     DECLARE @is_insurance_covered BIT
-    -- get reservation data
     if UPDATE (confirmation_number)
+       AND (SELECT confirmation_number FROM INSERTED) IS NOT NULL
     BEGIN
         -- get data from reservation
         DECLARE @branch_code VARCHAR(64)
