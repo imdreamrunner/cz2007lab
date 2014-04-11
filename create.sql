@@ -147,7 +147,7 @@ CREATE TABLE RentRecord (
     is_tank_full BIT,
     point_used INT NOT NULL DEFAULT 0 CHECK(point_used >= 0),
     point_earned INT CHECK(point_earned >= 0),
-    is_insurance_covered BIT,
+    is_insurance_covered BIT NOT NULL,
     charge DECIMAL(32, 2),
     FOREIGN KEY (confirmation_number)
             REFERENCES ReservationRecord(confirmation_number),
@@ -523,6 +523,10 @@ BEGIN
     END
     -- check credit card
     IF (SELECT card_number FROM INSERTED) IS NOT NULL
+    IF (SELECT card_number
+          FROM CreditCard
+         WHERE card_number = (SELECT card_number FROM INSERTED)
+        ) IS NULL
     BEGIN
         DECLARE @card_number VARCHAR(64)
         IF (SELECT card_number FROM CreditCard WHERE card_number = @card_number)
@@ -598,7 +602,7 @@ BEGIN
         IF @point_used IS NULL
             SET @point_used = 0
         -- deduct point used.
-        SELECT @length = @length - FLOOR(@point_used/point_for_day)
+        SELECT @length = @length - FLOOR(@point_used/point_for_day)*24
           FROM VehicleView V, INSERTED I
          WHERE V.vehicle_id = I.vehicle_id
         -- calculate remaining time
