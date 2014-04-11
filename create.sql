@@ -466,6 +466,7 @@ BEGIN
     DECLARE @expected_return_time SMALLDATETIME
     DECLARE @rate_id INT
     DECLARE @is_insurance_covered BIT
+    -- get necessary info
     if (SELECT confirmation_number FROM INSERTED) IS NOT NULL
     BEGIN
         -- get data from reservation
@@ -498,6 +499,21 @@ BEGIN
           FROM VehicleView VV, INSERTED
          WHERE VV.vehicle_id = INSERTED.vehicle_id
     END
+    -- check credit card
+    IF (SELECT card_number FROM INSERTED) IS NOT NULL
+    BEGIN
+        DECLARE @card_number VARCHAR(64)
+        IF (SELECT card_number FROM CreditCard WHERE card_number = @card_number)
+           IS NULL
+        BEGIN
+            INSERT INTO CreditCard
+            (card_number, expired_date, phone)
+            VALUES SELECT card_number,
+                          expired_date,
+                          @phone
+                     FROM INSERTED
+        END
+    END
     -- insert data
     INSERT INTO RentRecord
         (
@@ -516,7 +532,7 @@ BEGIN
                vehicle_id,
                @rate_id,
                @expected_return_time,
-               @is_insurance_covered
+               @is_insurance_covered,
                point_used
           FROM INSERTED
 END
@@ -578,10 +594,12 @@ BEGIN
                              h_rate * @hour
               FROM INSERTED, RentalRate RT
              WHERE INSERTED.rate_id = RT.rate_id
+        -- update charge
         UPDATE RentRecord
            SET charge = @charge,
                point_earned = FLOOR(@charge/5)
          WHERE rent_id = (SELECT rent_id FROM INSERTED)
+        -- update member points
         UPDATE Member
            SET points = 500 +
                         (
