@@ -14,6 +14,7 @@ CREATE TABLE Branch (
 CREATE TABLE VehicleType (
     type VARCHAR(64) PRIMARY KEY,
     is_trunk BIT NOT NULL,
+    point_for_day INT NOT NULL,
     feature TEXT
 );
 
@@ -23,17 +24,17 @@ CREATE TABLE RentalRate (
     w_rate DECIMAL(10,2) NOT NULL CHECK(w_rate >= 0),
     d_rate DECIMAL(10,2) NOT NULL CHECK(d_rate >= 0),
     h_rate DECIMAL(10,2) NOT NULL CHECK(h_rate >= 0),
-    CHECK (w_rate <= d_rate*24 AND d_rate <= h_rate*24),
+    CHECK (w_rate <= d_rate*7 AND d_rate <= h_rate*24),
     w_ins DECIMAL(10,2) NOT NULL CHECK(w_ins >= 0),
     d_ins DECIMAL(10,2) NOT NULL CHECK(d_ins >= 0),
     h_ins DECIMAL(10,2) NOT NULL CHECK(h_ins >= 0),
-    CHECK (w_ins <= d_ins*24 AND d_ins <= h_ins*24)
+    CHECK (w_ins <= d_ins*7 AND d_ins <= h_ins*24)
 );
 
 
 CREATE TABLE Maintains (
     branch_code VARCHAR(64),
-    type VARCHAR(64) NOT NULL,
+    type VARCHAR(64),
     rate_id INT NOT NULL,
     PRIMARY KEY (branch_code, type),
     FOREIGN KEY (branch_code) REFERENCES Branch(branch_code)
@@ -56,7 +57,7 @@ CREATE TABLE Customer (
 
 CREATE TABLE Member (
     phone VARCHAR(20) PRIMARY KEY,
-    points INT NOT NULL DEFAULT 0 CHECK (points >= 0),
+    points INT NOT NULL DEFAULT 500 CHECK (points >= 0),
     fees DECIMAL(32,2) NOT NULL,
     valid_through DATE NOT NULL,
     FOREIGN KEY (phone) REFERENCES Customer(phone)
@@ -91,7 +92,8 @@ CREATE TABLE VehicleForSale (
     phone VARCHAR(20),
     sold_date  DATE,
     sold_price DECIMAL(32,2) CHECK(sold_price > 0),
-    point_used INT CHECK(point_used >= 0),
+    point_used INT DEFAULT 0
+            CHECK(point_used >= 0 AND point_used % 2000 = 0),
     FOREIGN KEY (vehicle_id) REFERENCES Vehicle(vehicle_id)
             ON UPDATE CASCADE,
     FOREIGN KEY (agent_name) REFERENCES Agent(agent_name)
@@ -190,6 +192,51 @@ SELECT vehicle_id,
 GO
 
 
+CREATE VIEW VehicleForRent
+AS
+SELECT *
+  FROM Vehicle V
+ WHERE NOT EXISTS (
+       SELECT *
+         FROM VehicleForSale VS
+        WHERE VS.vehicle_id = V.vehicle_id
+       )
+GO
+
+
+CREATE VIEW SoldVehicle
+AS
+SELECT *,
+       amount_paid = sold_price - FLOOR(point_used/20)
+  FROM VehicleForSale
+ WHERE sold_price IS NOT NULL
+GO
+
+
+CREATE VIEW MemberView
+AS
+SELECT C.*,
+       points,
+       fees,
+       valid_through
+  FROM Member M
+  JOIN Customer C
+    ON C.phone = M.phone
+GO
+
+
+CREATE VIEW CreditCardView
+AS
+SELECT C.*,
+       card_number,
+       phone,
+       expired_date
+  FROM CreditCard CC
+  JOIN Customer C
+    ON C.phone = CC.phone
+GO
+
+
 CREATE VIEW ReservationView
 AS
 SELECT confirmation_number,
@@ -234,24 +281,13 @@ SELECT rent_id,
          ON RE.phone = C.phone
        JOIN RentalRate RT
          ON RT.rate_id = RE.rate_id
-       JOIN CreditCard CC
+  LEFT JOIN CreditCard CC
          ON CC.card_number = RE.card_number
        JOIN Vehicle V
          ON V.vehicle_id = RE.vehicle_id
        JOIN Branch B
          ON B.branch_code = V.branch_code
          
-GO
-
-
-CREATE VIEW RentFromReservation
-AS
-SELECT REV.*,
-       expected_pick_up_time,
-       RS.expected_return_time AS expected_return_time_when_reserve
-  FROM RentView REV,
-       ReservationRecord RS
- WHERE REV.confirmation_number = RS.confirmation_number;
 GO
 
 
@@ -355,8 +391,23 @@ GO
 -- (confirmation_number, vehicle_id, card_number?)
 -- One rental at a time.
 
+CREATE VIEW RentFromReservation
+AS
+SELECT confirmation_number,
+       phone
+       vehicle_id,
+       card_number,
+       expired_date,
+       expected_return_time,
+       is_insurance_covered
+  FROM RentRecord RE
+  LEFT JOIN CreditCard CC
+         ON CC.card_number = RE.card_number
+GO
+
+
 CREATE TRIGGER CreateRentFromReservation
-    ON RentView
+    ON RentFromReservation
     INSTEAD OF INSERT
 AS 
 BEGIN
@@ -368,8 +419,7 @@ BEGIN
     DECLARE @expected_return_time SMALLDATETIME
     DECLARE @rate_id INT
     DECLARE @is_insurance_covered BIT
-    if UPDATE (confirmation_number)
-       AND (SELECT confirmation_number FROM INSERTED) IS NOT NULL
+    if (SELECT confirmation_number FROM INSERTED) IS NOT NULL
     BEGIN
         -- get data from reservation
         DECLARE @branch_code VARCHAR(64)

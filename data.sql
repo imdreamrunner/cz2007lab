@@ -13,21 +13,21 @@ INSERT INTO Branch VALUES
     ('lax1', 'Los Angeles', NULL);
 
 
-INSERT INTO VehicleType (type, is_trunk) VALUES
-    ('Economy', 0),
-    ('Compact', 0),
-    ('Mid-size', 0),
-    ('Standard', 0),
-    ('Full- size', 0),
-    ('Premium', 0),
-    ('Luxury', 0),
-    ('SUV', 0),
-    ('Van', 0),
-    ('24-foot', 1),
-    ('15-foot', 1),
-    ('12-foot', 1),
-    ('Box Trunk', 1),
-    ('Cargo', 1);
+INSERT INTO VehicleType (type, is_trunk, point_for_day) VALUES
+    ('Economy', 0, 1000),
+    ('Compact', 0, 1000),
+    ('Mid-size', 0, 1000),
+    ('Standard', 0, 1000),
+    ('Full- size', 0, 1000),
+    ('Premium', 0, 1000),
+    ('Luxury', 0, 1500),
+    ('SUV', 0, 1500),
+    ('Van', 0, 1500),
+    ('24-foot', 1, 1500),
+    ('15-foot', 1, 1500),
+    ('12-foot', 1, 1500),
+    ('Box Trunk', 1, 1500),
+    ('Cargo', 1, 1500);
 
 
 INSERT INTO RentalRate (w_rate, d_rate, h_rate, w_ins, d_ins, h_ins) VALUES
