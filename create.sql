@@ -275,7 +275,6 @@ SELECT rent_id,
        CC.card_number AS card_number,
        CC.expired_date AS expired_date,
        V.*,
-       branch_code,
        city
   FROM RentRecord RE
        JOIN Customer C
