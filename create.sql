@@ -336,6 +336,32 @@ END
 GO
 
 
+CREATE TRIGGER CalculatePointSoldVehicle
+  ON VehicleForSale
+  AFTER UPDATE
+AS
+BEGIN
+    IF (SELECT COUNT(*) FROM INSERTED) > 1
+        THROW 51000, 'Only one row at a time.', 1
+    IF (SELECT phone FROM INSERTED) IS NOT NULL
+    BEGIN
+        UPDATE Member
+           SET points = 500 +
+                        (
+                        SELECT SUM(point_earned) - SUM(point_used)
+                          FROM RentRecord
+                         WHERE phone = (SELECT phone FROM INSERTED)
+                        ) -
+                        (
+                        SELECT SUM(point_used)
+                          FROM VehicleForSale
+                         WHERE phone = (SELECT phone FROM INSERTED)
+                        )
+    END
+END
+GO
+
+
 -- Create reservation.
 -- One reservation at a time.
 
@@ -556,5 +582,17 @@ BEGIN
            SET charge = @charge,
                point_earned = FLOOR(@charge/5)
          WHERE rent_id = (SELECT rent_id FROM INSERTED)
+        UPDATE Member
+           SET points = 500 +
+                        (
+                        SELECT SUM(point_earned) - SUM(point_used)
+                          FROM RentRecord
+                         WHERE phone = (SELECT phone FROM INSERTED)
+                        ) -
+                        (
+                        SELECT SUM(point_used)
+                          FROM VehicleForSale
+                         WHERE phone = (SELECT phone FROM INSERTED)
+                        )
     END
 END
