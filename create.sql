@@ -145,7 +145,7 @@ CREATE TABLE RentRecord (
     actual_return_time SMALLDATETIME,
     odometer INT CHECK(odometer >= 0),
     is_tank_full BIT,
-    point_used INT NOT NULL CHECK(point_used >= 0),
+    point_used INT NOT NULL DEFAULT 0 CHECK(point_used >= 0),
     point_earned INT CHECK(point_earned >= 0),
     is_insurance_covered BIT,
     charge DECIMAL(32, 2),
