@@ -1,65 +1,85 @@
 -- Q1
 
+WITH RentOut
+AS
+(SELECT *
+  FROM RentView
+ WHERE pick_up_time BETWEEN '2001-1-1' AND '2020-1-1'
+)
 SELECT vehicle_id,
        branch_code,
        [type]
   FROM VehicleView
- WHERE vehicle_id IN (SELECT vehicle_id FROM VehicleNotReturned)
+ WHERE vehicle_id IN (SELECT vehicle_id FROM RentOut)
  ORDER BY branch_code, [type];
+
+WITH RentOut
+AS
+(SELECT *
+  FROM RentView
+ WHERE pick_up_time BETWEEN '2001-1-1' AND '2020-1-1'
+)
 
 SELECT branch_code,
        COUNT(*) AS Number
   FROM VehicleView
- WHERE vehicle_id IN (SELECT vehicle_id FROM VehicleNotReturned)
+WHERE vehicle_id IN (SELECT vehicle_id FROM RentOut)
  GROUP BY branch_code
- ORDER BY branch_code, [type];
- 
+ ORDER BY branch_code;
+
+WITH RentOut
+AS
+(SELECT *
+  FROM RentView
+ WHERE pick_up_time BETWEEN '2001-1-1' AND '2020-1-1'
+)
 SELECT branch_code, [type],
        COUNT(*) AS Number
   FROM VehicleView
- WHERE vehicle_id IN (SELECT vehicle_id FROM VehicleNotReturned)
+ WHERE vehicle_id IN (SELECT vehicle_id FROM RentOut)
  GROUP BY branch_code, [type]
  ORDER BY branch_code, [type];
 
+-- Q2
+
+SELECT vehicle_id
+  FROM VehicleForSale
+ WHERE DATEDIFF(month, added_date, GETDATE())>3
+   AND sold_date IS NULL
+
  -- Q3
 
- SELECT vehicle_id,
-       branch_code,
-       [type]
-  FROM VehicleView
- WHERE DATEDIFF(year, bought_date, GETDATE()) >= 5
- ORDER BY branch_code, [type];
+  SELECT vehicle_id,
+         branch_code,
+         [type]
+    FROM VehicleView
+   WHERE DATEDIFF(year, bought_date, GETDATE()) >= 5
+ORDER BY branch_code, [type];
 
  -- Q4
 
  SELECT name,
        points,
-       branch_code
-  FROM MemberView, Branch B
- WHERE phone = (
-    SELECT phone
-      FROM RentView REV
-     WHERE B.branch_code = REV.branch_code
-     GROUP BY phone
-    HAVING SUM(point_used) >=
-        ALL(SELECT COUNT(point_used)
-        FROM RentView REV2
-        WHERE B.branch_code = REV2.branch_code)
- );
-
- -- Q5
- SELECT name,
-       points,
-       branch_code
-  FROM MemberView, Branch
+       city
+  FROM MemberView, City
  WHERE phone IN (
     SELECT phone
       FROM RentView
-     WHERE RentView.branch_code = Branch.branch_code 
-     GROUP BY phone, branch_code
+     WHERE RentView.city = City.city
+     GROUP BY phone
     HAVING SUM(point_used) >=
         ALL (SELECT SUM(point_used)
                FROM RentView
-              WHERE RentView.branch_code = Branch.branch_code 
-              GROUP BY phone, branch_code)
+              WHERE RentView.city = City.city
+              GROUP BY phone)
  );
+
+ -- Q5
+
+SELECT DISTINCT phone
+           FROM Member
+EXCEPT
+SELECT DISTINCT phone
+           FROM RentRecord
+          WHERE pick_up_time BETWEEN '2014-04-11' AND '2014-05-01'
+            AND point_used != 0
