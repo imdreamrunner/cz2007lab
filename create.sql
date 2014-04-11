@@ -350,12 +350,13 @@ BEGIN
         UPDATE Member
            SET points = 500 +
                         (
-                        SELECT SUM(point_earned) - SUM(point_used)
+                        SELECT SUM(ISNULL(point_earned,0))
+                               - SUM(ISNULL(point_used,0))
                           FROM RentRecord
                          WHERE phone = (SELECT phone FROM INSERTED)
                         ) -
                         (
-                        SELECT SUM(point_used)
+                        SELECT SUM(ISNULL(point_used, 0))
                           FROM VehicleForSale
                          WHERE phone = (SELECT phone FROM INSERTED)
                         )
@@ -619,12 +620,13 @@ BEGIN
         UPDATE Member
            SET points = 500 +
                         (
-                        SELECT SUM(point_earned) - SUM(point_used)
+                        SELECT SUM(ISNULL(point_earned,0))
+                               - SUM(ISNULL(point_used,0))
                           FROM RentRecord
                          WHERE phone = (SELECT phone FROM INSERTED)
                         ) -
                         (
-                        SELECT SUM(point_used)
+                        SELECT SUM(ISNULL(point_used, 0))
                           FROM VehicleForSale
                          WHERE phone = (SELECT phone FROM INSERTED)
                         )
