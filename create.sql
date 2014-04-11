@@ -145,7 +145,7 @@ CREATE TABLE RentRecord (
     actual_return_time SMALLDATETIME,
     odometer INT CHECK(odometer >= 0),
     is_tank_full BIT,
-    point_used INT CHECK(point_used >= 0),
+    point_used INT NOT NULL CHECK(point_used >= 0),
     point_earned INT CHECK(point_earned >= 0),
     is_insurance_covered BIT,
     charge DECIMAL(32, 2),
@@ -350,16 +350,17 @@ BEGIN
         UPDATE Member
            SET points = 500 +
                         (
-                        SELECT SUM(ISNULL(point_earned,0))
-                               - SUM(ISNULL(point_used,0))
+                        SELECT ISNULL(SUM(ISNULL(point_earned,0))
+                               - SUM(ISNULL(point_used,0)),0)
                           FROM RentRecord
                          WHERE phone = (SELECT phone FROM INSERTED)
                         ) -
                         (
-                        SELECT SUM(ISNULL(point_used, 0))
+                        SELECT ISNULL(SUM(ISNULL(point_used, 0)),0)
                           FROM VehicleForSale
                          WHERE phone = (SELECT phone FROM INSERTED)
                         )
+         WHERE phone = (SELECT phone FROM INSERTED)
     END
 END
 GO
@@ -500,11 +501,17 @@ BEGIN
         SELECT @rate_id = rate_id
           FROM Maintains
          WHERE type = @type AND branch_code = @branch_code
+
+        IF NOT EXISTS (SELECT *
+                         FROM VehicleView
+                        WHERE vehicle_id = (SELECT vehicle_id FROM INSERTED)
+                              AND branch_code = @branch_code
+                              AND type = @type)
+            THROW 51001, 'Vehicle type and branch incorrect.', 1
     END
     ELSE
     BEGIN
         -- get data from inserted data
-        SET @confirmation_number = NULL
         SELECT @phone                = phone,
                @confirmation_number  = NULL,
                @expected_return_time = expected_return_time,
@@ -620,15 +627,16 @@ BEGIN
         UPDATE Member
            SET points = 500 +
                         (
-                        SELECT SUM(ISNULL(point_earned,0))
-                               - SUM(ISNULL(point_used,0))
+                        SELECT ISNULL(SUM(ISNULL(point_earned,0))
+                               - SUM(ISNULL(point_used,0)),0)
                           FROM RentRecord
                          WHERE phone = (SELECT phone FROM INSERTED)
                         ) -
                         (
-                        SELECT SUM(ISNULL(point_used, 0))
+                        SELECT ISNULL(SUM(ISNULL(point_used, 0)),0)
                           FROM VehicleForSale
                          WHERE phone = (SELECT phone FROM INSERTED)
                         )
+         WHERE phone = (SELECT phone FROM INSERTED)
     END
 END
