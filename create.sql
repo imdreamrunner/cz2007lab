@@ -229,7 +229,6 @@ CREATE VIEW CreditCardView
 AS
 SELECT C.*,
        card_number,
-       phone,
        expired_date
   FROM CreditCard CC
   JOIN Customer C
@@ -324,6 +323,7 @@ CREATE TRIGGER FlagAsUsed
 AS
 BEGIN
     INSERT INTO VehicleForSale
+    (vehicle_id)
     SELECT vehicle_id
       FROM INSERTED I
      WHERE mileage >= 100000
@@ -376,12 +376,6 @@ SELECT confirmation_number,
        is_insurance_covered,
        estimated_charge
   FROM ReservationRecord RS
-       JOIN Customer C
-         ON RS.phone = C.phone
-       JOIN VehicleType T
-         ON T.type = RS.type
-       JOIN Branch B
-         ON B.branch_code = RS.branch_code
 GO
 
 
@@ -463,9 +457,9 @@ GO
 CREATE VIEW Rent
 AS
 SELECT confirmation_number,
-       phone
+       RE.phone AS phone,
        vehicle_id,
-       card_number,
+       RE.card_number AS card_number,
        expired_date,
        expected_return_time,
        is_insurance_covered,
