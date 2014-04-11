@@ -118,7 +118,7 @@ CREATE TABLE ReservationRecord (
     branch_code VARCHAR(64) NOT NULL,
     type VARCHAR(64) NOT NULL,
     phone VARCHAR(20) NOT NULL,
-    expected_pick_up_time SMALLDATETIME NOT NULL,    
+    expected_pick_up_time SMALLDATETIME NOT NULL,
     expected_return_time SMALLDATETIME NOT NULL,
     is_insurance_covered BIT NOT NULL DEFAULT 1,
     estimated_charge DECIMAL(32, 2),
@@ -301,11 +301,11 @@ GO
 CREATE TRIGGER CheckAddedDate
     ON VehicleForSale
  AFTER INSERT,UPDATE
-AS 
+AS
 BEGIN
     IF EXISTS (
         SELECT *
-          FROM Vehicle 
+          FROM Vehicle
           JOIN INSERTED
             ON Vehicle.vehicle_id = INSERTED.vehicle_id
          WHERE Vehicle.bought_date > INSERTED.added_date
@@ -334,7 +334,7 @@ BEGIN
            )
            AND (SELECT is_trunk
                   FROM VehicleView
-                 WHERE VehicleView.vehicle_id = I.vehicle_id) = 1
+                 WHERE VehicleView.vehicle_id = I.vehicle_id) = 0
 END
 GO
 
@@ -372,7 +372,7 @@ AS
 SELECT branch_code,
        type,
        phone,
-       expected_pick_up_time,    
+       expected_pick_up_time,
        expected_return_time,
        is_insurance_covered
   FROM ReservationRecord RS
@@ -430,7 +430,7 @@ BEGIN
         branch_code,
         type,
         phone,
-        expected_pick_up_time,    
+        expected_pick_up_time,
         expected_return_time,
         is_insurance_covered,
         estimated_charge
@@ -473,7 +473,7 @@ GO
 CREATE TRIGGER CreateRentFromReservation
     ON Rent
     INSTEAD OF INSERT
-AS 
+AS
 BEGIN
     IF (SELECT COUNT(*) FROM INSERTED) > 1
         THROW 51000, 'Only one row at a time.', 1
@@ -599,7 +599,7 @@ BEGIN
         DECLARE @point_used INT
         -- get length
         SELECT @length = DATEDIFF(hour, pick_up_time,
-                                  actual_return_time), 
+                                  actual_return_time),
                @point_used = point_used
           FROM INSERTED
         IF @point_used IS NULL
