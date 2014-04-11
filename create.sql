@@ -274,7 +274,9 @@ SELECT rent_id,
        RT.*,
        CC.card_number AS card_number,
        CC.expired_date AS expired_date,
-       V.*
+       V.*,
+       branch_code,
+       city
   FROM RentRecord RE
        JOIN Customer C
          ON RE.phone = C.phone
@@ -568,6 +570,8 @@ GO
 CREATE VIEW VehicleNotReturned
 AS
 SELECT rent_id,
+       phone,
+       vehicle_id,
        actual_return_time,
        odometer,
        is_tank_full
