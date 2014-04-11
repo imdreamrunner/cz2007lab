@@ -135,7 +135,7 @@ CREATE TABLE ReservationRecord (
 
 CREATE TABLE RentRecord (
     rent_id BIGINT PRIMARY KEY IDENTITY(1,1),
-    confirmation_number VARCHAR(64) UNIQUE,
+    confirmation_number VARCHAR(64),
     phone VARCHAR(20) NOT NULL,
     card_number VARCHAR(64),
     vehicle_id INT NOT NULL,
@@ -254,7 +254,6 @@ SELECT confirmation_number,
          ON T.type = RS.type
        JOIN Branch B
          ON B.branch_code = RS.branch_code
- ORDER BY expected_pick_up_time
 GO
 
 
@@ -287,7 +286,6 @@ SELECT rent_id,
          ON V.vehicle_id = RE.vehicle_id
        JOIN Branch B
          ON B.branch_code = V.branch_code
- ORDER BY pick_up_time
 GO
 
 
@@ -523,6 +521,7 @@ BEGIN
            IS NULL
         BEGIN
             INSERT INTO CreditCard
+                   (card_number, expired_date, phone)
                    SELECT card_number,
                           expired_date,
                           @phone
@@ -556,7 +555,7 @@ GO
 
 CREATE VIEW VehicleNotReturned
 AS
-SELECT confirmation_number,
+SELECT rent_id,
        actual_return_time,
        odometer,
        is_tank_full
