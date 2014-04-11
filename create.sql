@@ -135,8 +135,8 @@ CREATE TABLE ReservationRecord (
 
 CREATE TABLE RentRecord (
     rent_id BIGINT PRIMARY KEY IDENTITY(1,1),
-    confirmation_number VARCHAR(64),
-    phone VARCHAR(20),
+    confirmation_number VARCHAR(64) UNIQUE,
+    phone VARCHAR(20) NOT NULL,
     card_number VARCHAR(64),
     vehicle_id INT NOT NULL,
     rate_id INT,
@@ -332,6 +332,9 @@ BEGIN
                 FROM VehicleForSale VS
                WHERE VS.vehicle_id = I.vehicle_id
            )
+           AND (SELECT is_trunk
+                  FROM VehicleView
+                 WHERE VehicleView.vehicle_id = I.vehicle_id) = 1
 END
 GO
 
@@ -362,11 +365,31 @@ END
 GO
 
 
+CREATE VIEW Reserve
+AS
+SELECT confirmation_number,
+       branch_code,
+       type,
+       phone,
+       expected_pick_up_time,    
+       expected_return_time,
+       is_insurance_covered,
+       estimated_charge
+  FROM ReservationRecord RS
+       JOIN Customer C
+         ON RS.phone = C.phone
+       JOIN VehicleType T
+         ON T.type = RS.type
+       JOIN Branch B
+         ON B.branch_code = RS.branch_code
+GO
+
+
 -- Create reservation.
 -- One reservation at a time.
 
 CREATE TRIGGER CreateReservation
-    ON ReservationView
+    ON Reserve
     INSTEAD OF INSERT
 AS
 BEGIN
@@ -476,7 +499,7 @@ BEGIN
                @confirmation_number  = confirmation_number,
                @expected_return_time = expected_return_time,
                @branch_code          = branch_code,
-               @type                 = type
+               @type                 = type,
                @is_insurance_covered = is_insurance_covered
           FROM ReservationRecord RS
          WHERE RS.confirmation_number = (SELECT confirmation_number
@@ -490,9 +513,9 @@ BEGIN
     BEGIN
         -- get data from inserted data
         SET @confirmation_number = NULL
-        SELECT @phone                = phone
-               @confirmation_number  = NULL
-               @expected_return_time = expected_return_time
+        SELECT @phone                = phone,
+               @confirmation_number  = NULL,
+               @expected_return_time = expected_return_time,
                @is_insurance_covered = is_insurance_covered
           FROM INSERTED
         SELECT @rate_id = rate_id
@@ -507,8 +530,7 @@ BEGIN
            IS NULL
         BEGIN
             INSERT INTO CreditCard
-            (card_number, expired_date, phone)
-            VALUES SELECT card_number,
+                   SELECT card_number,
                           expired_date,
                           @phone
                      FROM INSERTED
@@ -544,7 +566,7 @@ AS
 SELECT confirmation_number,
        actual_return_time,
        odometer,
-       is_tank_full,
+       is_tank_full
   FROM RentRecord
  WHERE actual_return_time IS NULL
 GO
