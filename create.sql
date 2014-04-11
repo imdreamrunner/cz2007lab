@@ -316,6 +316,26 @@ END
 GO
 
 
+-- Flag a vehicle as used.
+
+CREATE TRIGGER FlagAsUsed
+    ON Vehicle
+ AFTER INSERT, UPDATE
+AS
+BEGIN
+    INSERT INTO VehicleForSale
+    SELECT vehicle_id
+      FROM INSERTED I
+     WHERE mileage >= 100000
+           AND NOT EXISTS (
+              SELECT *
+                FROM VehicleForSale VS
+               WHERE VS.vehicle_id = I.vehicle_id
+           )
+END
+GO
+
+
 -- Create reservation.
 -- One reservation at a time.
 
@@ -391,7 +411,7 @@ GO
 -- (confirmation_number, vehicle_id, card_number?)
 -- One rental at a time.
 
-CREATE VIEW RentFromReservation
+CREATE VIEW Rent
 AS
 SELECT confirmation_number,
        phone
@@ -399,7 +419,8 @@ SELECT confirmation_number,
        card_number,
        expired_date,
        expected_return_time,
-       is_insurance_covered
+       is_insurance_covered,
+       point_used
   FROM RentRecord RE
   LEFT JOIN CreditCard CC
          ON CC.card_number = RE.card_number
@@ -407,7 +428,7 @@ GO
 
 
 CREATE TRIGGER CreateRentFromReservation
-    ON RentFromReservation
+    ON Rent
     INSTEAD OF INSERT
 AS 
 BEGIN
@@ -460,7 +481,8 @@ BEGIN
             vehicle_id,
             rate_id,
             expected_return_time,
-            is_insurance_covered
+            is_insurance_covered,
+            point_used
         )
         SELECT confirmation_number,
                @phone,
@@ -469,8 +491,20 @@ BEGIN
                @rate_id,
                @expected_return_time,
                @is_insurance_covered
+               point_used
           FROM INSERTED
 END
+GO
+
+
+CREATE VIEW NotReturnedVehicle
+AS
+SELECT confirmation_number,
+       actual_return_time,
+       odometer,
+       is_tank_full,
+  FROM RentRecord
+ WHERE actual_return_time IS NULL
 GO
 
 
@@ -491,10 +525,17 @@ BEGIN
         DECLARE @week INT
         DECLARE @day INT
         DECLARE @hour INT
+        DECLARE @point_used INT
         -- get length
         SELECT @length = DATEDIFF(hour, pick_up_time,
-                                  actual_return_time)
+                                  actual_return_time), 
+               @point_used = point_used
           FROM INSERTED
+        -- deduct point used.
+        SELECT @length = @length - FLOOR(@point_used/point_for_day)
+          FROM VehicleView V, INSERTED I
+         WHERE V.vehicle_id = I.vehicle_id
+        -- calculate remaining time
         SET @week = FLOOR(@length/(7*24))
         SET @day  = FLOOR((@length - @week*(7*24))/24)
         SET @hour = @length - @week*(7*24) - @day*24
