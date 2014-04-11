@@ -254,6 +254,7 @@ SELECT confirmation_number,
          ON T.type = RS.type
        JOIN Branch B
          ON B.branch_code = RS.branch_code
+ ORDER BY expected_pick_up_time
 GO
 
 
@@ -286,7 +287,7 @@ SELECT rent_id,
          ON V.vehicle_id = RE.vehicle_id
        JOIN Branch B
          ON B.branch_code = V.branch_code
-         
+ ORDER BY pick_up_time
 GO
 
 
@@ -367,14 +368,12 @@ GO
 
 CREATE VIEW Reserve
 AS
-SELECT confirmation_number,
-       branch_code,
+SELECT branch_code,
        type,
        phone,
        expected_pick_up_time,    
        expected_return_time,
-       is_insurance_covered,
-       estimated_charge
+       is_insurance_covered
   FROM ReservationRecord RS
 GO
 
@@ -555,7 +554,7 @@ END
 GO
 
 
-CREATE VIEW NotReturnedVehicle
+CREATE VIEW VehicleNotReturned
 AS
 SELECT confirmation_number,
        actual_return_time,
@@ -589,6 +588,8 @@ BEGIN
                                   actual_return_time), 
                @point_used = point_used
           FROM INSERTED
+        IF @point_used IS NULL
+            SET @point_used = 0
         -- deduct point used.
         SELECT @length = @length - FLOOR(@point_used/point_for_day)
           FROM VehicleView V, INSERTED I

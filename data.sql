@@ -93,7 +93,7 @@ INSERT INTO Vehicle (branch_code, type, bought_date, original_price, mileage) VA
 
 
 INSERT INTO VehicleForSale VALUES
-    (1, '2014-04-01', 'agent1', '12345678', '2014-04-02', 2000, 200),
+    (1, '2014-04-01', 'agent1', '12345678', '2014-04-02', 2000, 2000),
     (2, '2014-04-01', NULL, NULL, NULL, NULL, NULL),
     (3, '2014-1-1', NULL, NULL, NULL, NULL, NULL),
     (10, '1999-1-1', NULL, NULL, NULL, NULL, NULL);
